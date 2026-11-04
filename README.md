@@ -19,11 +19,11 @@ Four varied apps: GitHub (instant), Slack (easy, optional review with real conse
 
 ## Live generation
 * In the demo, generation runs on Claude from model knowledge with no browsing, and the guide is labeled that way.
-* api/generate.js is the fuller design: a research agent that uses web search on official docs and returns the same JSON plus a verification log. It needs an API key and is not wired into the hosted demo.
+* index.html first calls /api/generate, a research agent (api/generate.js) that searches official docs and returns the same JSON plus its own verification log. If that endpoint is missing, it falls back to Claude on claude.ai without browsing.
 
 ## Setup
 1. Open index.html in a browser to see the library (live generation needs the hosted demo).
-2. For the agent backend: deploy api/generate.js to Vercel or Netlify, set ANTHROPIC_API_KEY (see .env.example), and point the UI's gen() function at /api/generate.
+2. To deploy with the browsing agent: import the repo into Vercel and set ANTHROPIC_API_KEY (see .env.example). Vercel serves index.html and api/generate.js together.
 No credentials are in this repo.
 
 ## Limitations
