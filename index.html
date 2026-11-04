@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OAuth Path: setup guides for agent builders</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1c1b19;--mut:#6b6860;--card:#fff;--bd:#e4e1d9;--ac:#c8501e;--ok:#1f7a4d;--warn:#a8650a;--bad:#b3261e;--chip:#f1eee6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151412;--fg:#f1efe9;--mut:#a09c92;--card:#1e1d1a;--bd:#33312c;--ac:#ec7a47;--ok:#4cc38a;--warn:#e2a040;--bad:#ff7b72;--chip:#272521;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+h1{font:700 28px/1.2 Georgia,serif;margin:0 0 6px}h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:28px 0 10px}
+p{margin:0 0 8px}.mut{color:var(--mut)}
+.bar{display:flex;gap:8px;margin:18px 0 10px}.bar input{flex:1;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--fg);font-size:16px;min-width:0}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:10px 14px}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{background:var(--chip);border:1px solid var(--bd);border-radius:999px;padding:6px 12px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}.v{font-size:20px;font-weight:650}
+.dots{display:inline-flex;gap:4px;margin-right:8px;vertical-align:middle}.dots i{width:12px;height:12px;border-radius:50%;background:var(--bd)}.dots i.on{background:var(--ac)}
+.step{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--bd)}.step:first-child{border-top:0}
+.step input{margin-top:5px;width:18px;height:18px}.step.done .t{text-decoration:line-through;color:var(--mut)}
+.badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;margin-left:6px;white-space:nowrap}
+.agent{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.you{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.next{border-color:var(--ac);border-width:2px}
+details{border-top:1px solid var(--bd);padding:10px 0}summary{cursor:pointer;font-weight:600}
+ul{margin:6px 0;padding-left:20px}a{color:var(--ac)}
+.lib{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.lib button{text-align:left;padding:14px}.lib b{display:block}
+.note{font-size:14px;color:var(--mut);border-left:3px solid var(--bd);padding-left:10px;margin:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.ev{display:grid;gap:6px;font-size:14px}.ev div{display:flex;gap:8px}.ev b{min-width:92px}
+</style></head><body><main>
+<h1>OAuth Path</h1>
+<p class="mut">Before your users can connect an app, you may need your own OAuth app with the provider. Look up an app, see how hard it is, how long it takes, what an agent can do, and where you take over.</p>
+<div class="bar"><input id="q" placeholder="App name or website, e.g. Notion or zoom.us" autocomplete="off"><button class="pri" id="go">Get guide</button></div>
+<div id="out"></div>
+<script>
+const G={
+github:{n:"GitHub",d:1,hands:"20 to 30 minutes",wait:"None",
+sum:"Self serve. Register an OAuth app in settings, no review. Decide first whether you want a GitHub App instead, which is GitHub's recommended model for new integrations.",
+steps:[["you","Open Settings, Developer settings, OAuth Apps, New OAuth App","Needs your GitHub login. Use an organization account if the app is a company product."],
+["you","Fill name, homepage URL and authorization callback URL","Use a stable HTTPS callback. Add a separate app for local development."],
+["you","Generate a client secret and copy it once","The secret is shown a single time. Store it in a secrets manager."],
+["agent","Implement the authorization code flow with state and PKCE","Agent writes the redirect, callback, token exchange and storage code."],
+["agent","Request minimal scopes and test with your own account","Agent runs the flow end to end against a test user."],
+["you","Ask organization owners to approve access when users belong to restricted orgs","Org owners can block third party apps. Users cannot override this."]],
+req:["GitHub account","HTTPS callback URL","Client ID and secret stored securely"],
+blk:[["Org member sees a request access screen","An org owner must approve the app in organization settings, third party access."],["redirect_uri mismatch","Callback must match the registered URL, including path. Register one app per environment."],["Long lived tokens","Classic OAuth app token expiry was not verified here. GitHub Apps can issue user tokens that expire after 8 hours with 6 month refresh tokens, a safer default."]],
+src:[["Creating an OAuth app","https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app"],["Differences between GitHub Apps and OAuth apps","https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps"]],
+unc:["Current scope names were not rechecked in the console","Rate limit numbers not verified"]},
+slack:{n:"Slack",d:2,hands:"1 to 3 hours",wait:"None for install. Marketplace listing is optional and takes weeks (estimate)",
+sum:"You can build and install in your own workspace right away. To let customers in other workspaces install, activate public distribution. A Marketplace listing is a separate review that matters for rate limits and discovery.",
+steps:[["you","Create an app at api.slack.com/apps from scratch in a dev workspace","Needs a Slack account and a free dev workspace."],
+["agent","Draft the scope list and an app manifest","Agent proposes bot and user scopes from your use case and keeps them minimal."],
+["you","Add redirect URLs and install to your workspace","Redirect URLs must be HTTPS for distribution."],
+["agent","Implement the oauth.v2.access exchange and token storage per workspace","One token per installing workspace."],
+["you","Activate public distribution in Manage Distribution","Slack checks that hard coded values are removed and a redirect is set."],
+["you","Optional: submit to the Slack Marketplace","Needs a privacy policy, support contact, test workspace and reviewer access. Agent drafts the text and screenshots list."]],
+req:["Slack account and dev workspace","HTTPS redirect URL","Privacy policy and support page for Marketplace"],
+blk:[["Workspace admin approval required","Many workspaces require an admin to approve app installs. Give customers an admin request message."],["conversations.history limited to 1 request per minute and 15 messages per call","Applies to commercially distributed apps outside the Marketplace. Internal apps and Marketplace apps are exempt. Cache messages and use Events API, or get listed."],["Review rejection","Common causes are broad scopes and missing test access. Cut scopes and supply credentials."]],
+src:[["Installing with OAuth","https://api.slack.com/authentication/oauth-v2"],["Distributing apps","https://api.slack.com/start/distributing"],["Marketplace review guide","https://api.slack.com/start/distributing/guidelines"]],
+unc:["Marketplace review duration is an estimate, no official figure"]},
+google:{n:"Google (Gmail, Drive, Calendar)",d:5,hands:"1 to 3 days",wait:"2 to 8 plus weeks for sensitive or restricted scopes (estimate)",
+sum:"Creating the app is easy. Going to production is not. Sensitive scopes need Google verification. Restricted scopes, such as full Gmail or Drive, add an independent security assessment that costs money and recurs.",
+steps:[["you","Create a Google Cloud project and enable the APIs you need","Needs a Google account. Use a company owned account."],
+["you","Configure the OAuth consent screen, app name, logo, domain, privacy policy","Authorized domains must be verified in Search Console."],
+["agent","Classify every scope as non sensitive, sensitive or restricted and cut to the minimum","This decides your whole timeline. Agent maps scopes to the official lists."],
+["agent","Implement the auth flow with offline access and test in Testing mode","In Testing mode refresh tokens expire after 7 days and only listed test users can connect."],
+["agent","Draft the scope justification and script a demo video","Google asks for a video showing each scope in use."],
+["you","Submit for verification and answer reviewer email","Only you can respond from the project owner account."],
+["you","Restricted scopes only: complete the third party security assessment","Done with an approved assessor. Budget cost and several weeks."]],
+req:["Verified domain","Public privacy policy and homepage","Demo video","Security assessment for restricted scopes"],
+blk:[["Unverified app screen and 100 user cap","Stay in Testing for dev only. Verification removes the warning."],["Refresh token stops after 7 days","Expected in Testing. Publish the app to production."],["Verification rejected for scope breadth","Request narrower scopes and explain each in plain words."],["Drive access triggers the security assessment","Use the drive.file scope with the Google Picker. It is non sensitive and avoids the assessment."],["All your users are on one Google Workspace domain","Set the consent screen to Internal. No verification, no 100 user cap, no 7 day token expiry."]],
+src:[["OAuth app verification","https://support.google.com/cloud/answer/13463073"],["Restricted scope verification","https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification"],["Scopes list","https://developers.google.com/identity/protocols/oauth2/scopes"]],
+unc:["Assessment cost (reported 5K to 20K dollars a year by one third party) and timelines not verified with Google","Policy details change often, reconfirm before planning"]},
+linkedin:{n:"LinkedIn",d:4,hands:"half a day",wait:"Instant for sign in. Weeks to months, with real rejection risk, for marketing or community APIs (estimate)",
+sum:"Basic sign in and posting to your own profile are self serve. Anything about company pages, ads or reading member data is gated behind partner style applications that many developers are turned down for.",
+steps:[["you","Create or choose a LinkedIn Company Page","The app must be tied to a Page."],
+["you","Create the app at developer.linkedin.com and send the verification link to a Page admin","The admin must approve before the app works."],
+["agent","Pick products you can self serve, such as Sign In with LinkedIn using OpenID Connect and Share on LinkedIn","Agent maps your feature to the smallest product."],
+["agent","Implement the three legged flow and test with your own account","Tokens last about 60 days, check current docs."],
+["you","If you need gated products, request access and describe your use case","Agent drafts the use case. You submit and answer follow ups."],
+["you","Wait for review and prepare a fallback design","Plan the product to work without the gated API."]],
+req:["Company Page and a Page admin","Business email and website","Clear written use case for gated products"],
+blk:[["Access denied for a gated product","Reapply with a narrower, partner style use case. Consider designing around it."],["Members must sign in again every 60 days","Programmatic refresh tokens (365 days) exist only for approved Marketing Developer Platform partners. Everyone else gets 60 day access tokens with no renewal."]],
+src:[["Authentication overview","https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication"],["Getting access to APIs","https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access"]],
+unc:["Approval odds and review time are community reports only","Product names change"]}
+};
+const V={github:[["Classic OAuth app needs no review","Unverified","From prior knowledge, not rechecked"],["GitHub App user tokens can expire after 8 hours with 6 month refresh tokens","Confirmed","GitHub docs (Enterprise Server versions; current page not opened)"],["Classic OAuth app token expiry","Unverified","Not found in this pass"]],
+slack:[["Non Marketplace commercially distributed apps get 1 request per minute and 15 objects on conversations.history and replies","Corrected","Guide said reported, now exact. Slack changelog, May 29 2025"],["Existing installs of such apps hit the limit from March 3 2026","Confirmed","Slack changelog FAQ (date moved from Sept 2025)"],["Marketplace apps and internal customer built apps keep the higher limits","Confirmed","Slack changelog"],["Marketplace review takes weeks","Unverified","No official figure found"]],
+google:[["Testing mode: 100 test users, refresh tokens expire after 7 days unless only basic scopes","Confirmed","Nango and Unified docs (secondary)"],["Restricted scopes need verification plus annual CASA assessment","Confirmed","Nylas and Unified docs (secondary)"],["drive.file is non sensitive and avoids CASA","Corrected","Added to guide, Unified docs"],["Workspace Internal user type skips verification","Corrected","Added to guide, pub.dev drive sync docs"],["Verification can take several weeks or longer","Confirmed","Quoting Google via Nylas"],["CASA costs about 5K to 20K dollars a year","Unverified","Single third party estimate"]],
+linkedin:[["Access tokens last 60 days","Confirmed","Microsoft Learn LinkedIn docs"],["Programmatic refresh tokens (365 days) only for approved Marketing Developer Platform partners","Corrected","Guide was vague, now precise"],["App must link to a Company Page and be verified by a Page admin","Confirmed","Secondary source only"],["Approval odds and review time for gated products","Unverified","No official figure"]]};
+function vlog(k){const v=V[k];if(!v)return"";const c={Confirmed:"ok",Corrected:"warn",Unverified:"bad"};return `<h2>Verification log, 4 Nov 2026</h2><div class="card">${v.map(r=>`<div class="step"><div><b style="color:var(--${c[r[1]]})">${r[1]}</b> ${esc(r[0])}<div class="mut">${esc(r[2])}</div></div></div>`).join("")}</div>`}
+const $=s=>document.querySelector(s),out=$("#out");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LEVELS=["","Very easy","Easy","Moderate","Hard","Very hard"];
+let cur=null;
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function home(){cur=null;out.innerHTML=`<h2>Library</h2><div class="lib">${Object.entries(G).map(([k,g])=>`<button data-k="${k}"><b>${esc(g.n)}</b><span class="mut">${LEVELS[g.d]} · ${esc(g.hands)}</span></button>`).join("")}</div>
+<p class="note">Not in the library? Type any app name or website above and an agent will build a guide live.</p>
+<h2>How this works</h2><div class="card mut">Each guide splits work into steps an agent can do and steps only you can do, such as console clicks, identity checks and approval replies. Every guide states what was sourced, what was tested, and what is still uncertain.</div>`;
+out.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{location.hash=b.dataset.k})}
+function view(g,key,live){cur=g;const done=ls("done:"+(key||g.n))||{};const nextI=g.steps.findIndex((s,i)=>s[0]==="you"&&!done[i]);
+const dots=`<span class="dots">${[1,2,3,4,5].map(i=>`<i class="${i<=g.d?"on":""}"></i>`).join("")}</span>`;
+out.innerHTML=`<div class="row"><button id="back">Back</button><button id="copy">Copy as Markdown</button><button id="dl">Download</button></div>
+<h1>${esc(g.n)}</h1><p>${esc(g.sum)}</p>
+<div class="grid"><div class="card"><div class="k">Difficulty</div><div class="v">${dots}${LEVELS[g.d]}</div></div>
+<div class="card"><div class="k">Hands on effort</div><div class="v">${esc(g.hands)}</div></div>
+<div class="card"><div class="k">Waiting on approval</div><div class="v" style="font-size:16px">${esc(g.wait)}</div></div></div>
+${nextI>=0?`<div class="card next"><div class="k">Your next action</div><b>${esc(g.steps[nextI][1])}</b><p class="mut">${esc(g.steps[nextI][2])}</p></div>`:""}
+<h2>Path, step by step</h2><div class="card" id="steps">${g.steps.map((s,i)=>`<label class="step ${done[i]?"done":""}"><input type="checkbox" data-i="${i}" ${done[i]?"checked":""}><div><div class="t"><b>${esc(s[1])}</b><span class="badge ${s[0]}">${s[0]==="agent"?"Agent can do":"You do"}</span></div><div class="mut">${esc(s[2])}</div></div></label>`).join("")}</div>
+<h2>Requirements</h2><div class="chips">${g.req.map(r=>`<span class="chip">${esc(r)}</span>`).join("")}</div>
+<h2>If you get blocked</h2><div class="card">${g.blk.map(b=>`<details><summary>${esc(b[0])}</summary><p>${esc(b[1])}</p></details>`).join("")}</div>
+${vlog(key)}<h2>Evidence</h2><div class="card ev"><div><b>Basis</b><span>${live?"Generated live by an agent from model knowledge. No browsing or provider console access in this run.":"Drafted from docs, then key claims checked by web search on 4 Nov 2026, see the log above. Mostly secondary sources, not provider consoles."}</span></div>
+<div><b>Tested</b><span>Not run against live provider consoles. Treat as unverified setup attempts.</span></div>
+<div><b>Uncertain</b><span>${g.unc.map(esc).join("; ")||"None listed"}</span></div>
+<div><b>Sources</b><span>${g.src.map(s=>`<a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a>`).join(" · ")||"None"}</span></div></div>`;
+$("#back").onclick=()=>{history.pushState("",document.title,location.pathname);home()};
+$("#copy").onclick=async e=>{try{await navigator.clipboard.writeText(md(g));e.target.textContent="Copied"}catch(x){e.target.textContent="Copy blocked, use Download"}};
+$("#dl").onclick=async()=>{try{const d=await claude.use("downloads");if(!d)throw 0;await d.save({filename:g.n.replace(/\W+/g,"_")+"_oauth_guide.md",data:md(g)})}catch(x){$("#dl").textContent="Download unavailable"}};
+out.querySelectorAll("[data-i]").forEach(c=>c.onchange=()=>{done[c.dataset.i]=c.checked;ls("done:"+(key||g.n),done);view(g,key,live)})}
+function md(g){return `# ${g.n} OAuth setup guide\n\n${g.sum}\n\nDifficulty: ${LEVELS[g.d]} (${g.d} of 5)\nHands on: ${g.hands}\nWaiting: ${g.wait}\n\n## Steps\n${g.steps.map((s,i)=>`${i+1}. [${s[0]==="agent"?"Agent":"You"}] ${s[1]}. ${s[2]}`).join("\n")}\n\n## Requirements\n${g.req.map(r=>"* "+r).join("\n")}\n\n## If blocked\n${g.blk.map(b=>`* ${b[0]}: ${b[1]}`).join("\n")}\n\n## Uncertain\n${g.unc.map(u=>"* "+u).join("\n")}\n\n## Sources\n${g.src.map(s=>`* ${s[0]}: ${s[1]}`).join("\n")}\n`}
+const PROMPT=q=>`You are an OAuth integration researcher helping a developer who wants their users to connect "${q}" to an AI agent product. You have NO web access in this run, so rely on what you know and be honest about it. Return ONLY JSON, no fences, matching exactly:
+{"n":"official app name","d":1 to 5 integer (1 instant self serve, 5 months of review),"hands":"developer effort","wait":"approval wait, or None","sum":"2 sentences on whether a provider OAuth app is needed, and what is hard","steps":[["agent or you","short title","one sentence detail"]],"req":["requirement"],"blk":[["likely blocker","what to do"]],"src":[["label","official docs URL you are confident exists"]],"unc":["things you are not sure about, including any timelines that are estimates"]}
+Rules: 6 to 9 steps. Mark a step "agent" only if software can do it (code, config, drafting text, testing). Mark "you" for console clicks, identity, payment, legal, approval replies. Cover review or verification, scope restrictions, redirect URI rules, token lifetimes, and app type nuances. If you do not recognize the app, say so in unc and give a generic path. Never invent URLs. Avoid hyphens and dashes in prose.`;
+async function gen(q){out.innerHTML=`<div class="card"><b>Investigating ${esc(q)}</b><p class="mut" id="st">Asking the agent for the provider path...</p></div>`;
+try{const s=await claude.use("sample");if(!s)throw{code:"none"};
+const g=await s.json(PROMPT(q),{modelTier:"default",cache:false,onText:t=>{const e=$("#st");if(e)e.textContent="Drafting guide, "+t.text.length+" characters so far..."}});
+if(!g||!Array.isArray(g.steps)||!g.n)throw{code:"bad"};
+g.d=Math.min(5,Math.max(1,parseInt(g.d)||3));g.req=g.req||[];g.blk=g.blk||[];g.src=(g.src||[]).filter(x=>/^https:\/\//.test(x[1]));g.unc=g.unc||[];g.hands=g.hands||"Unknown";g.wait=g.wait||"Unknown";
+view(g,"live:"+q.toLowerCase(),true)}catch(e){out.innerHTML=`<div class="card"><b>Could not generate</b><p class="mut">${e&&e.code==="not_granted"?"Permission to ask Claude was declined.":e&&e.code==="rate_limited"?"Rate limited, try again shortly.":"The agent is unavailable or returned an unusable guide. Try again."}</p><button id="b">Back</button></div>`;$("#b").onclick=home}}
+function submit(){const q=$("#q").value.trim();if(!q)return;const l=q.toLowerCase().replace(/^https?:\/\/(www\.)?/,"").split(/[./]/)[0];
+const k=Object.keys(G).find(k=>l===k||G[k].n.toLowerCase().startsWith(l));if(k&&l.length>2){location.hash=k}else gen(q)}
+$("#go").onclick=submit;$("#q").onkeydown=e=>{if(e.key==="Enter")submit()};
+function route(){const k=location.hash.slice(1);if(G[k])view(G[k],k,false);else home()}
+addEventListener("hashchange",route);route();
+</script></main></body></html>
