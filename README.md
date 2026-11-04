@@ -2,7 +2,7 @@
 
 Look up an app, get a guide you can follow and share, know what to do next.
 
-Live demo: https://claude.ai/artifact/SNuVPETeGqPsi1sgv3ULQW
+Live demo: https://oauthpath-cyan.vercel.app/
 
 ## The problem as I understand it
 A provider OAuth app is the registration (client ID, secret, redirect URIs, scopes) that lets your product ask users to connect their account. Managed auth hides it, but developers who bring their own app face unknown effort. Setup ranges from 10 minutes (GitHub) to weeks of review plus a paid security assessment (Google restricted scopes). The painful part is not knowing which one you are in until you are blocked.
