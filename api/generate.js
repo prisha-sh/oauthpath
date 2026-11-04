@@ -8,7 +8,7 @@ Rules: mark a step "agent" only if software can do it. Cite only URLs you actual
 module.exports = async (req, res) => {
   const q = String((req.body && req.body.q) || req.query.q || "").slice(0, 200);
   if (!q) return res.status(400).json({ error: "missing q" });
-  let text = "";
+  let text = "", raw = null;
   if (process.env.GEMINI_API_KEY) {
     // Free option: Gemini with Google Search grounding.
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         contents: [{ role: "user", parts: [{ text: `Build the OAuth setup guide for: ${q}` }] }],
       }),
     });
-    const data = await r.json();
+    const data = await r.json(); raw = data;
     text = ((data.candidates && data.candidates[0] && data.candidates[0].content.parts) || []).map(p => p.text || "").join("");
   } else {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -33,12 +33,11 @@ module.exports = async (req, res) => {
         messages: [{ role: "user", content: `Build the OAuth setup guide for: ${q}` }],
       }),
     });
-    const data = await r.json();
+    const data = await r.json(); raw = data;
     text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
   }
   try {
     const a = text.indexOf("{"), b = text.lastIndexOf("}");
     res.status(200).json(JSON.parse(text.slice(a, b + 1)));
-  } catch (e) { res.status(502).json({ error: "unparseable", text }); }
+  } catch (e) { res.status(502).json({ error: "unparseable", using: process.env.GEMINI_API_KEY ? "gemini" : "anthropic", text, detail: raw && (raw.error || raw.promptFeedback || raw.candidates && raw.candidates[0] && raw.candidates[0].finishReason) }); }
 };
-
